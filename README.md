@@ -10,33 +10,30 @@ This project serves as a real-world playground for systems programming concepts:
 - Custom memory allocators
 
 ## Log Format
-The engine processes newline-delimited log files with the following structure:
+The engine processes ISO8601-timestamped log files with the following structure:
 ```text
-<TIMESTAMP> <LEVEL> <SERVICE_NAME> <MESSAGE>
+<TIMESTAMP> <LEVEL> <USER> <LATENCY> "<MESSAGE>"
 ```
 
 **Example:**
 ```text
-1638210000 INFO  auth_service  User login successful id=42
-1638210005 ERROR db_shard_1    Connection timeout retrying...
-1638210012 WARN  cache_layer   High memory usage detected
+2025-08-25T11:33:35Z WARN user2920 152ms "User authenticated"
+2026-10-25T03:13:06Z ERROR user8469 66ms "Permission denied"
 ```
 
 ## How to Run
 
 ### Prerequisites
 - C++17 compliant compiler (GCC/Clang/MSVC)
-- CMake 3.15+
 
 ### Build
 ```bash
-cmake -B build
-cmake --build build
+g++ -Iinclude src/main.cpp -o fastlog
 ```
 
 ### Run
 ```bash
-./build/fastlog datasets/sample.log
+./fastlog datasets/sample.log
 ```
 
 ## Milestones

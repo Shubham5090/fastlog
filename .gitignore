@@ -4,6 +4,7 @@ bin/
 lib/
 *.dSYM/
 .cache/
+fastlog
 
 # IDE
 .vscode/
