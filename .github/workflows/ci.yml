@@ -13,8 +13,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
+<<<<<<< HEAD
     - name: Configure CMake
       run: cmake -B build
       
     - name: Build
       run: cmake --build build
+=======
+    - name: Build
+      run: g++ -Iinclude src/main.cpp -o fastlog
+>>>>>>> 7944845fa8b6b812ad2abe8efa62cdb056d69e81
