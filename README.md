@@ -1,31 +1,27 @@
 <div align="center">
 
-# 🚀 FastLog
+# FastLog
 
 ### **CPU-Optimized Log Processing Engine in C++**
-
-[![C++](https://img.shields.io/badge/Language-C++17-blue.svg)](https://isocpp.org/)
-[![Status](https://img.shields.io/badge/Status-In%20Development-orange.svg)]()
-[![License](https://img.shields.io/badge/License-MIT-green.svg)]()
 
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
 **FastLog** is a high-performance C++ application designed to efficiently process massive log files (ranging from 100MB to multiple GBs). It focuses on extreme optimization, leveraging low-level CPU and memory techniques to parse, filter, and analyze data at lightning speeds.
 
 ### Key Capabilities
-- 📂 **High-Speed I/O**: Reads large files efficiently.
-- 🔍 **Parsing**: Extracts structured data from raw log lines.
-- ⚡ **Filtering**: rapid filtering by log level, user ID, or timestamps.
-- 📊 **Aggregation**: Computes statistics (counts, averages, top-K) in real-time.
-- ⚙️ **Optimization**: Implements advanced CPU & memory optimizations.
+- **High-Speed I/O**: Reads large files efficiently.
+- **Parsing**: Extracts structured data from raw log lines.
+- **Filtering**: rapid filtering by log level, user ID, or timestamps.
+- **Aggregation**: Computes statistics (counts, averages, top-K) in real-time.
+- **Optimization**: Implements advanced CPU & memory optimizations.
 
 ---
 
-## 🎯 Objective
+## Objective
 
 The primary goal is to **progressively optimize** a baseline C++ program. This project serves as a practical exploration of:
 - **Memory Management**: Reducing allocations and improving access patterns.
@@ -34,7 +30,7 @@ The primary goal is to **progressively optimize** a baseline C++ program. This p
 
 ---
 
-## 🧠 Learning Objectives
+## Learning Objectives
 
 - **Basic File I/O**: Efficient reading of large datasets.
 - **Benchmarking**: Measuring throughput and latency accurately.
@@ -44,7 +40,7 @@ The primary goal is to **progressively optimize** a baseline C++ program. This p
 
 ---
 
-## 🏆 Goals
+## Goals
 
 - [ ] **Build a Complete Engine**: Read, parse, filter, and analyze hundreds of MBs of logs.
 - [ ] **Establish Baselines**: Create a simple implementation to benchmark against.
@@ -54,7 +50,7 @@ The primary goal is to **progressively optimize** a baseline C++ program. This p
 
 ---
 
-## 📅 Timeline
+## Timeline
 
 ### **Month 1: Foundation**
 - [ ] **Basic I/O**: Implementing efficient file reading.
@@ -75,6 +71,3 @@ The primary goal is to **progressively optimize** a baseline C++ program. This p
 - [ ] **Final Review**: Prepare the repository for showcase.
 
 ---
-<div align="center">
-    <sub>Built with ❤️ by Shubham</sub>
-</div>
