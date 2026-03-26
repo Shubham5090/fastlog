@@ -5,7 +5,7 @@
 
 This project serves as a real-world playground for systems programming concepts:
 - Zero-copy parsing
-- SIMD optimization
+- Multithreading and concurrency
 - Lock-free data structures
 - Custom memory allocators
 
@@ -33,9 +33,33 @@ The engine processes ISO8601-timestamped log files with the following structure:
 │   └── fastlog/         # Core library headers
 ├── log generator/       # Utilities to generate test log data
 ├── src/                 # Source code
-│   └── main.cpp         # Main entry point
+│   ├── base.cpp         # Baseline implementation (single-threaded, simple parsing)
+│   └── final.cpp        # Optimized implementation (multithreaded, zero-copy parsing)
 └── tests/               # Unit and integration tests
 ```
+## Code Structure
+
+### `base.cpp`
+
+- Implements the **baseline version** of the system  
+- Uses straightforward parsing and aggregation  
+- Single-threaded execution  
+- Focuses on correctness and establishing initial performance metrics  
+
+**Purpose:**  
+Acts as the reference point for measuring optimization gains  
+
+---
+
+### `final.cpp`
+
+- Implements the **optimized version** of the system  
+- Uses improved parsing techniques (e.g., zero-copy parsing)  
+- Incorporates multithreading for parallel processing  
+- Reduces memory allocations and improves cache efficiency  
+
+**Purpose:**  
+Demonstrates performance improvements and achieves the target speedup over the baseline  
 
 ## How to Run
 
