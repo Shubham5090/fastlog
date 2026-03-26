@@ -1,72 +1,125 @@
-# FastLog
+#include <bits/stdc++.h>
+using namespace std;
+using namespace std::chrono;
 
-## Project Goal
-**FastLog** is a high-performance C++ log processing engine designed to handle massive datasets efficiently. The primary objective is to build a baseline implementation and then iteratively optimize it to achieve a **4x speedup** through advanced techniques in memory management, concurrency, and I/O.
+struct Log {
+    string level;
+    string user;
+    int latency;
+};
 
-This project serves as a real-world playground for systems programming concepts:
-- Zero-copy parsing
-- SIMD optimization
-- Lock-free data structures
-- Custom memory allocators
+inline Log parse_line(const string& line) {
+    Log log;
 
-## Log Format
-The engine processes ISO8601-timestamped log files with the following structure:
-```text
-<TIMESTAMP> <LEVEL> <USER> <LATENCY> "<MESSAGE>"
-```
+    const char* p = line.c_str();
 
-**Example:**
-```text
-2025-08-25T11:33:35Z WARN user2920 152ms "User authenticated"
-2026-10-25T03:13:06Z ERROR user8469 66ms "Permission denied"
-```
+    // skip timestamp
+    while (*p && *p != ' ') p++;
+    p++;
 
-## Directory Structure
+    // level
+    const char* start = p;
+    while (*p && *p != ' ') p++;
+    log.level = string(start, p - start);
+    p++;
 
-```text
-.
-├── .github/             # GitHub configuration (e.g., CI workflows)
-├── benchmarks/          # Performance benchmarking suites
-├── datasets/            # Sample log datasets for testing and benchmarks
-├── docs/                # Project documentation and track details
-├── include/             # C++ header files
-│   └── fastlog/         # Core library headers
-├── log generator/       # Utilities to generate test log data
-├── src/                 # Source code
-│   └── main.cpp         # Main entry point
-└── tests/               # Unit and integration tests
-```
+    // user
+    start = p;
+    while (*p && *p != ' ') p++;
+    log.user = string(start, p - start);
+    p++;
 
-## How to Run
+    // latency
+    int latency = 0;
+    while (*p >= '0' && *p <= '9') {
+        latency = latency * 10 + (*p - '0');
+        p++;
+    }
+    log.latency = latency;
 
-### Prerequisites
-- C++17 compliant compiler (GCC/Clang/MSVC)
+    return log;
+}
 
-### Build
-```bash
-g++ -Iinclude src/main.cpp -o fastlog
-```
+int main(int argc, char* argv[]) {
+    if (argc < 2) {
+        cout << "Usage: ./fastlog <file>\n";
+        return 1;
+    }
 
-### Run
-```bash
-./fastlog datasets/sample.log
-```
+    string filename = argv[1];
+    ifstream file(filename);
 
-## Milestones
+    if (!file.is_open()) {
+        cout << "Error opening file\n";
+        return 1;
+    }
 
-### Month 1: Foundation
-- [ ] **Baseline I/O**: Efficient file reading (chunks/mmap).
-- [ ] **Basic Parser**: Convert raw lines to structured `LogEntry` objects.
-- [ ] **Stats Engine**: Aggregate counts by level and service.
-- [ ] **Benchmarking Harness**: Establish the "Ground Truth" performance.
+    vector<Log> logs;
+    logs.reserve(5000000);
 
-### Month 2: Optimization
-- [ ] **Profiling**: Identify hotspots (CPU/Memory).
-- [ ] **Multithreading**: Implement thread pool for parallel processing.
-- [ ] **Memory Optimization**: Reduce allocations (std::string overhead).
-- [ ] **Goal**: Achieve 4x throughput vs Month 1 baseline.
+    string line;
 
-### Month 3: Polish
-- [ ] **API Cleanup**: internal interfaces are stable and clean.
-- [ ] **Final Benchmarks**: Comprehensive report generation.
-- [ ] **Demo**: One-click script to show processing of a 1GB+ file.
+    // -------- READ --------
+    auto read_start = steady_clock::now();
+
+    while (getline(file, line)) {
+        logs.push_back(parse_line(line));
+    }
+
+    auto read_end = steady_clock::now();
+
+    // -------- PROCESS --------
+    auto proc_start = steady_clock::now();
+
+    unordered_map<string, int> level_count;
+    unordered_map<string, int> user_count;
+    vector<int> latencies;
+    latencies.reserve(logs.size());
+
+    long long total_latency = 0;
+
+    for (const auto& log : logs) {
+        level_count[log.level]++;
+        user_count[log.user]++;
+        total_latency += log.latency;
+        latencies.push_back(log.latency);
+    }
+
+    // Average
+    double avg_latency = (double)total_latency / logs.size();
+
+    // Top 10 users
+    vector<pair<string, int>> users(user_count.begin(), user_count.end());
+    sort(users.begin(), users.end(),
+         [](auto& a, auto& b) { return a.second > b.second; });
+
+    // 95th percentile
+    size_t idx = 0.95 * latencies.size();
+    nth_element(latencies.begin(), latencies.begin() + idx, latencies.end());
+    int p95 = latencies[idx];
+
+    auto proc_end = steady_clock::now();
+
+    // -------- OUTPUT --------
+    cout << "Log Level Counts:\n";
+    for (auto& p : level_count) {
+        cout << p.first << ": " << p.second << "\n";
+    }
+
+    cout << "\nAverage Latency: " << avg_latency << " ms\n";
+
+    cout << "\nTop 10 Users:\n";
+    for (int i = 0; i < 10 && i < users.size(); i++) {
+        cout << users[i].first << " : " << users[i].second << "\n";
+    }
+
+    cout << "\n95th Percentile Latency: " << p95 << " ms\n";
+
+    auto read_time = duration_cast<milliseconds>(read_end - read_start).count();
+    auto proc_time = duration_cast<milliseconds>(proc_end - proc_start).count();
+
+    cout << "\nRead Time: " << read_time << " ms\n";
+    cout << "Processing Time: " << proc_time << " ms\n";
+
+    return 0;
+}
