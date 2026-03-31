@@ -1,37 +1,38 @@
 #include <bits/stdc++.h>
 using namespace std;
 using namespace std::chrono;
+#include <string_view>
 
 struct Log {
-    string level;
-    string user;
+    std::string_view level;
+    std::string_view user;
     int latency;
 };
 
-inline Log parse_line(const string& line) {
+inline Log parse_line(const char* start, const char* end) {
     Log log;
 
-    const char* p = line.c_str();
+    const char* p = start;
 
     // skip timestamp
-    while (*p && *p != ' ') p++;
+    while (p<end && *p != ' ') p++;
     p++;
 
     // level
-    const char* start = p;
-    while (*p && *p != ' ') p++;
-    log.level = string(start, p - start);
+    const char* lvl_start = p;
+    while (p<end && *p != ' ') p++;
+    log.level = string_view(lvl_start, p - lvl_start);
     p++;
 
     // user
-    start = p;
-    while (*p && *p != ' ') p++;
-    log.user = string(start, p - start);
+    const char* userstart = p;
+    while (p<end && *p != ' ') p++;
+    log.user = string_view(userstart, p - userstart);
     p++;
 
     // latency
     int latency = 0;
-    while (*p >= '0' && *p <= '9') {
+    while (p<end && *p >= '0' && *p <= '9') {
         latency = latency * 10 + (*p - '0');
         p++;
     }
@@ -47,28 +48,55 @@ int main(int argc, char* argv[]) {
     }
 
     string filename = argv[1];
-    ifstream file(filename);
+    ifstream file(filename, ios::binary);
 
     if (!file.is_open()) {
         cout << "Error opening file\n";
         return 1;
     }
-
     vector<Log> logs;
+
     logs.reserve(5000000);
+    const int CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
+    vector<char> buffer(CHUNK_SIZE);
+    string leftover;
 
-    string line;
+    // -------- READ--------
 
-    // -------- READ --------
     auto read_start = steady_clock::now();
+    while (file) {
+        file.read(buffer.data(), CHUNK_SIZE);
+        streamsize bytes_read = file.gcount();
+        if (bytes_read == 0) break;
+        const char* chunk_start = buffer.data();
+        const char* chunk_end   = chunk_start + bytes_read;
+        const char* p           = chunk_start;
+        while (p < chunk_end) {
+            const char* nl = (const char*)memchr(p, '\n', chunk_end - p);
+            if (!nl) {
+                leftover.append(p, chunk_end - p);
+                break;
+            }
+            if (!leftover.empty()) {
+                leftover.append(p, nl - p);
+                logs.push_back(parse_line(leftover.data(), leftover.data() + leftover.size()));
+                leftover.clear();
+            } else {
+                logs.push_back(parse_line(p, nl));
+            }
+            p = nl + 1;
+        }
+    }
 
-    while (getline(file, line)) {
-        logs.push_back(parse_line(line));
+    if (!leftover.empty()) {
+        logs.push_back(parse_line(leftover.data(), leftover.data() + leftover.size()));
+        leftover.clear();
     }
 
     auto read_end = steady_clock::now();
 
     // -------- PROCESS --------
+
     auto proc_start = steady_clock::now();
 
     unordered_map<string, int> level_count;
@@ -79,13 +107,14 @@ int main(int argc, char* argv[]) {
     long long total_latency = 0;
 
     for (const auto& log : logs) {
-        level_count[log.level]++;
-        user_count[log.user]++;
+        level_count[string(log.level)]++;
+        user_count[string(log.user)]++;
         total_latency += log.latency;
         latencies.push_back(log.latency);
     }
 
     // Average
+
     double avg_latency = (double)total_latency / logs.size();
 
     // Top 10 users
