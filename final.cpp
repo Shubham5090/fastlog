@@ -3,14 +3,12 @@ using namespace std;
 using namespace std::chrono;
 #include <string_view>
 
-struct Log {
-    std::string_view level;
-    std::string_view user;
-    int latency;
-};
+vector<int> level_count(4);
+unordered_map<string, int> user_count;
+vector<int> latencies;
+long long total_latency = 0;
 
-inline Log parse_line(const char* start, const char* end) {
-    Log log;
+inline void parse_line(const char* start, const char* end) {
 
     const char* p = start;
 
@@ -21,13 +19,13 @@ inline Log parse_line(const char* start, const char* end) {
     // level
     const char* lvl_start = p;
     while (p<end && *p != ' ') p++;
-    log.level = string_view(lvl_start, p - lvl_start);
+    string_view level = string_view(lvl_start, p - lvl_start);
     p++;
 
     // user
     const char* userstart = p;
     while (p<end && *p != ' ') p++;
-    log.user = string_view(userstart, p - userstart);
+    string_view user = string_view(userstart, p - userstart);
     p++;
 
     // latency
@@ -36,9 +34,15 @@ inline Log parse_line(const char* start, const char* end) {
         latency = latency * 10 + (*p - '0');
         p++;
     }
-    log.latency = latency;
 
-    return log;
+    if(level == "INFO") level_count[0]++;
+    if(level == "WARN") level_count[1]++;
+    if(level == "ERROR") level_count[2]++;
+    if(level == "DEBUG") level_count[3]++;
+    user_count[string(user)]++;
+    total_latency += latency;
+    latencies.push_back(latency);
+
 }
 
 int main(int argc, char* argv[]) {
@@ -54,9 +58,10 @@ int main(int argc, char* argv[]) {
         cout << "Error opening file\n";
         return 1;
     }
-    vector<Log> logs;
 
-    logs.reserve(5000000);
+    user_count.reserve(5000000);
+    latencies.reserve(5000000);
+
     const int CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
     vector<char> buffer(CHUNK_SIZE);
     string leftover;
@@ -79,17 +84,17 @@ int main(int argc, char* argv[]) {
             }
             if (!leftover.empty()) {
                 leftover.append(p, nl - p);
-                logs.push_back(parse_line(leftover.data(), leftover.data() + leftover.size()));
+                parse_line(leftover.data(), leftover.data() + leftover.size());
                 leftover.clear();
             } else {
-                logs.push_back(parse_line(p, nl));
+                parse_line(p, nl);
             }
             p = nl + 1;
         }
     }
 
     if (!leftover.empty()) {
-        logs.push_back(parse_line(leftover.data(), leftover.data() + leftover.size()));
+        parse_line(leftover.data(), leftover.data() + leftover.size());
         leftover.clear();
     }
 
@@ -99,27 +104,9 @@ int main(int argc, char* argv[]) {
 
     auto proc_start = steady_clock::now();
 
-    vector<int> level_count(4);
-    unordered_map<string_view, int> user_count;
-    user_count.reserve(logs.size());
-    vector<int> latencies;
-    latencies.reserve(logs.size());
+     // Average
 
-    long long total_latency = 0;
-
-    for (const auto& log : logs) {
-        if(log.level == "INFO") level_count[0]++;
-        if(log.level == "WARN") level_count[1]++;
-        if(log.level == "ERROR") level_count[2]++;
-        if(log.level == "DEBUG") level_count[3]++;
-        user_count[log.user]++;
-        total_latency += log.latency;
-        latencies.push_back(log.latency);
-    }
-
-    // Average
-
-    double avg_latency = (double)total_latency / logs.size();
+    double avg_latency = (double)total_latency / latencies.size();
 
     // Top 10 users
     priority_queue<pair<int, string_view>, vector<pair<int, string_view>>, greater<pair<int, string_view>>> min_heap;
